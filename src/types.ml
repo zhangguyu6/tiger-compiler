@@ -10,7 +10,7 @@ type unique = int ref
 let id=ref (-1)
 
 let incridex () = 
-   incr id ;!id;;
+   incr id ;id;;
 
 let string_of_id (id:unique):string =
   sprintf "#id: %d #\n" !id;;

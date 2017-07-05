@@ -42,7 +42,7 @@ and raw_exp =
   (*变量 id subsript fieldExp*)
   | LValueExp of var L.loc 
   (*表达式序列*)
-  | SeqExp of exp L.loc list
+  | SeqExp of exp list
   (*中缀操作符*)
   | InfixOpExp of infixop L.loc * 
                   (*左表达式*)
@@ -55,7 +55,7 @@ and raw_exp =
                 exp L.loc      
   (*函数调用*)
   | CallExp of S.symbol * (*函数名*)
-               exp L.loc list (*参数列表*)
+               exp list (*参数列表*)
   (*列表*)
   | ArrayCreate of S.symbol * (*类型*)
                    exp L.loc * (*数组大小*)
@@ -252,7 +252,7 @@ and string_of_fcreatelist fcreatelist =
 
 and string_of_explist explist= 
     explist |>
-    List.fold_left (fun acc x -> acc^";"^(x |> L.extract_value|> string_of_exp)) ""
+    List.fold_left (fun acc x -> acc^";"^(x |>  string_of_exp)) ""
 
 and string_of_dec = function
   | TyDec  dec -> string_of_tydec dec

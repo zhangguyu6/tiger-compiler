@@ -10,6 +10,7 @@ type 'a loc = {
 }
 
 let extract_value {value;loc} = value  
+let extract_loc {value;loc} = loc
 
 (*打印pos*)
 let string_of_loc (loc:t) :string =
