@@ -5,7 +5,6 @@ module L = Location
 module S = Symtab
 module E = Errors
 module T = Env
-module U = Unique
 (*值环境*)
 type venv = T.entry S.t
 (*类型环境*)

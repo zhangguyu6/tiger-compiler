@@ -1,27 +1,16 @@
 open Batteries
 open BatPrintf
-module L = Location
+module L= Location
 module S = Symtab
-
+module T = Types
 
 type infixop =
   (*中缀操作符*)
-  | Plus
-  | Minus
-  | Times
-  | Divide
-  | Eq
-  | Li
-  | Le
-  | Gt
-  | Ge
-  | And
-  | Or
+  | Plus | Minus | Times | Divide | Eq | Li | Le | Gt | Ge | And | Or
 
 type unaryop =
   (*前缀操作符*)
-  | Neg
-  | Not
+  | Neg | Not
 
 type ty =
   (*tyid arrty recty 三种类型*)

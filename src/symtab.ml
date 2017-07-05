@@ -1,8 +1,11 @@
+(*符号表*)
 open Batteries
-
-type t = (string * int)
+(*key为string的map类型*)
+type symbol = string * int
+type 'a t = (symbol,'a) BatMap.t
 
 let create _ = BatMap.empty
+
 
 let get k m = 
   try Some (BatMap.find k m)

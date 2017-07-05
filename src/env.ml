@@ -1,7 +1,6 @@
-module S = Symtab
-module U = Unique
-
-type ty = 
+open Types
+open Symtab
+(*type ty = 
   | TInt
   | TFloat
   | TBool
@@ -34,7 +33,7 @@ let rec check_ty x y =
 let check_tylist tyl1 tyl2 =
   List.iter2 
   (fun x y -> if not (check_ty x y) then failwith "typelist dismatched")
-  tyl1 tyl2 ; true
+  tyl1 tyl2 ; true*)
 
 
 
@@ -44,3 +43,17 @@ type entry =
   | VarEntry of ty
   (*函数类型 (参数类型):返回类型*)
   | FunEntry of ty list * ty
+
+(*值环境 分为函数和变量*)
+type venv = entry t
+(*类型环境 只记录和返回类型*)
+type tenv = ty t
+
+let create_env _ = create ()
+
+let add_venv (k:symbol) (v:entry) (env:venv) =
+  set k v env
+
+let add_tenv (k:symbol) (v:ty) (env:tenv) =
+  set k v env
+
