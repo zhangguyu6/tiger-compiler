@@ -1,208 +1,248 @@
 open Batteries
 open BatPrintf
-module A = Ast
-module L = Location
-module S = Symtab
-module E = Errors
-module T = Env
-(*值环境*)
-type venv = T.entry S.t
-(*类型环境*)
-type tenv = T.ty S.t
+open Location
+open Symtab
+module T =Typecheck
+module A = Ast2
+type 'a vl = 
+  | VInt of int
+  | VFloat of float
+  | VBool of bool
+  | VString of string
+  | VNil 
+  (*连接表来模仿record*)
+  | VRevord of (symbol * 'a vl) list
+  (*exp+body*)
+  | VFunction of symbol list * A.exp
+  (*数组就是ocaml的数组*)
+  | VArray of 'a array
 
+let set_record sb v l =
+  try 
+    List.modify sb (fun x -> v) l
+  with
+    Not_found -> l@[(sb,v)]
 
-let eval_env name inf env  =
-  match (S.get (inf.value |> S.to_string) env) with
-  | Some v -> v
-  | _ ->  E.raise_NameError inf.loc name
-
-let eval_venv = eval_env "value" 
-let eval_tenv = eval_env "type" 
-let eval_funenv = eval_env "function"
-
-let rec check_exp venv tenv exp =
-  match exp with
-  | A.LValueExp inf -> check_var venv tenv inf.value
-  | A.NilExp _ -> T.TNil
-  | A.IntEXp _ -> T.TInt
-  | A.StringEXp -> T.TString
-  | A.BoolExp -> T.TBool
-  | A.FloatExp -> T.TFloat
-  (*序列表达式的类型,是最后一个表达式的类型*)
-  | A.SeqExp infolist -> 
-    infolist |> 
-    List.map (fun x -> x.value) |>
-    List.fold_left (fun _ exp -> check_exp venv tenv exp) T.TNil
-
-  | A.InfixOpExp (inf1,inf2,inf3) ->
-    check_binop inf1 (check_exp inf2.value) (check_exp inf3.value)
-
-  | A.UnaryExp (inf1,inf2) ->
-    check_unop inf1 (check_exp inf2.value)
-
-  | A.CallExp (inf1,inf2) -> 
-    let funname = inf1.value |> S.to_string in
-    let explist = inf2 |> List.map (fun x -> x.value) in 
-    check_callexp funname explist inf1 venv tenv
-
-  | A.ArrayCreate (inf1,inf2,inf3) -> 
-    let T.TArray(ty,_) = eval_tenv inf1.value tenv in
-    let tyinit = check_exp venv tenv inf3.value in
-    if T.check_ty ty tyinit then ty
-    else E.raise_TypeError inf1.loc "excepted init dismatched inittype"
-
-  | A.RecordCreate (inf1,fields) ->
-    let ty =  eval_tenv inf1.value tenv
-    match ty with
-    |T.TRecord (excepttylist,_) ->
-    let tylist = excepttylist |> List.map snd in
-    let actlist = fields |> List.map (fun (_,e) -> check_exp e.value) in
-    if T.check_tylist tylist actlist then ty
-    else E.raise_TypeError inf1.loc "recordfield dismatched"
-
-  | A.Assign (inf1,inf2) ->
-    let ty = check_var venv tenv inf1.value in
-    let actty = check_exp venv tenv inf2.value in 
-    if T.check_tylist ty actty then ty
-    else E.raise_TypeError inf1.loc "Assign dismatched"
-
-  | A.IfThenElse (inf1,inf2,inf3) ->
-    let thenty = check_exp venv tenv inf2.value in 
-    let elsety = check_exp venv tenv inf3.value in 
-    if (T.check_ty (check_exp venv tenv inf1.value) T.TBool) &&(T.check_ty thenty elsety)
-    then thenty
-    else E.raise_TypeError inf1.loc "ifthenelse dismatched"
-
-  | A.IfThen (inf1,inf2) ->
-    let ifty = check_exp venv tenv inf1.value in
-    let thenty = check_exp venv tenv inf2.value in 
-    if (T.check_ty ifty T.TBool) 
-    then thenty
-    else E.raise_TypeError inf1.loc "ifthen dismatched"
-
-  | A.WhileExp (inf1,inf2) ->
-    let whilety = check_exp venv tenv inf1.value in
-    let doty = check_exp venv tenv inf2.value in
-    if (T.check_ty whilety T.TBool) && (T.check_ty doty T.TNil)
-    then doty
-    else E.raise_TypeError inf1.loc "WhileExp dismatched"
-  
-  | A.ForExp (_,_,from,toinf,doinf) ->
-    let fromty = check_exp venv tenv from.value in
-    let toty = check_exp venv tenv toinf.value in
-    let doty = check_exp venv tenv doinf.value in
-    if (T.check_ty fromty T.TInt) && (T.check_ty toty T.TInt) && (T.check_ty doinf T.TNil)
-    then T.TNil
-    else E.raise_TypeError from.loc "ForExp dismatched"
-  
-  | A.Break _ -> T.TNil
-
-  | A.Let (declist,inf) ->
-    let (newvenv,newtenv) = check_declist declist venv tenv in
-    check_exp newvenv newtenv inf.value
-
-let check_declist venv tenv declist =
-    declist |>
-    List.fold_left (fun (t,v) x -> check_dec t v x) (venv,tenv) 
-
-let check_dec venv tenv = function 
-
-  | A.TyDec {type_name;type_type} ->
-    let tyid =  type_name.value  |> S.to_string in
-    let ty = check_ty tenv type_type in
-    (venv,S.set tyid ty tenv)
-
-  | A.VarDec {var_name;var_type;var_exp;_} ->
-    let varid = var_name.value |> S.to_string
-    let ty = eval_tenv var_type tenv in
-    let expty = check_exp venv tenv var_exp in
-    if T.check_ty ty expty 
-    then 
-    (S.set varid (T.VarEntry ty) venv,tenv)
-    else E.raise_TypeError var_name.loc "VarDec dismatched"
-
-  | A.FunDec {fun_name;fun_type;fun_fields;fun_exp} ->
-    let funid = fun_name.value |> S.to_string in
-    let returnty = eval_tenv tenv fun_type in
-    let actualty = check_exp venv tenv fun_exp.value
-    let tylist = fun_fields |>
-    List.map (fun field -> eval_tenv field.field_type.value tenv) in
-    if T.check_ty returnty actualty
-    then 
-    (S.set funid (T.FunEntry(tylist,returnty)) venv,tenv)
-    else E.raise_TypeError fun_name.loc "FunDec dismatched"
-
-
-
-let check_ty venv tenv= function
-  | A.Tyid inf -> eval_tenv inf tenv
-  | A.RecTy fieldlist -> 
-    let ftylist =
-    List.map (fun field -> (field.field_name.value,eval_tenv field.field_type.value tenv)) fieldlist in
-    T.TRecord (ftylist,U.incridex ())
-  | A.ArrTy inf ->T.TArray(eval_tenv inf tenv,U.incridex ())
-
-let check_callexp funname explist funinf venv tenv=
-    match (S.get funname venv) with
-    | Some (T.VarEntry _) -> 
-      E.raise_TypeError funinf.loc "excepted funvar"
-    | Some (T.FunEntry (tylist,ty)) -> 
-      let actualtylist = explist |> List.map (fun e ->check_exp venv tenv e) in
-      T.check_tylist actualtylist tylist;ty
-    | None ->
-      E.raise_TypeError funinf.loc "cann't find funvar"
-
-
-let check_unop opinf ty1 = match opinf.value with
-  | A.Neg -> 
-  if is_arith_ty ty1 then ty1 
-  else E.raise_TypeError opinf.loc "not int or float"
-  | A.Not ->
-  if ty1 = T.TBool then T.TBool 
-  else E.raise_TypeError opinf.loc "not a bool type"
-
-let check_binop opinf ty1 ty2 = match opinf.value with
-  | A.Plus | A.Minus | A.Times | A.Divide ->
-   if ty1 = ty2 && is_arith_ty ty1 then ty1
-   else E.raise_TypeError opinf.loc "left and right not match"
-  | A.Li | A.Le| A.Gt | A.Ge| A.And| A.Or ->
-   if ty1 = ty2 && is_logic_ty ty1 then T.TBool
-   else E.raise_TypeError opinf.loc "left and right not match"
-  | A.Eq -> 
-   if ty1 = ty2 && is_arith_ty ty1 then T.TBool
-   else E.raise_TypeError opinf.loc "left and right not match"
-   
-
-
-let is_arith_ty = function
-  | T.TInt | T.TFloat -> true
-  | _ ->false
-
-let is_logic_ty = function
-  | T.TBool | T.TInt | T.TFloat -> true
-  | _ -> false
-
-let rec check_var venv tenv var =
-  match var with
-  | A.IdVar inf -> 
+let bin_op op v1 v2 =
+  match op with
+  | "+" -> 
+    let VInt i1 =v1 in
+    let VInt i2 =v2 in
+    VInt (i1+i2)
+  | "+." -> 
+  let VFloat i1 =v1 in
+  let VFloat i2 =v2 in
+  VFloat (i1+.i2)
+  | "-" ->
+    let VInt i1 =v1 in
+    let VInt i2 =v2 in
+    VInt (i1-i2)
+  | "-." ->
+    let VFloat i1 =v1 in
+    let VFloat i2 =v2 in
+    VFloat (i1-.i2)
+  | "*" ->
+    let VInt i1 =v1 in
+    let VInt i2 =v2 in
+    VInt (i1*i2)
+  | "*." ->
+    let VFloat i1 =v1 in
+    let VFloat i2 =v2 in
+    VFloat (i1*.i2)
+  | "/" ->
+    let VInt i1 =v1 in
+    let VInt i2 =v2 in
+    VInt (i1/i2)
+  | "/." ->
+    let VFloat i1 =v1 in
+    let VFloat i2 =v2 in
+    VFloat (i1/.i2)
+  | "<" ->
     begin
-      match eval_venv  inf venv with
-      | T.VarEntry ty -> ty
-      | T.FunEntry _ -> 
-        E.raise_TypeError inf.loc "excepted a idvar"
+      match v1 with
+      | VInt i1 ->let VInt i2 =v2 in VBool (i1<i2)
+      | VFloat i1 ->let VFloat i2 =v2 in VBool (i1<i2)
+      | VString s1 -> let VString s2 = v2 in VBool(s1<s2)
     end
-  | A.SubscriptVar (inf,_) ->
-     match check_var venv tenv inf.value with
-     | TArray (ty,_) -> ty
-     | _ -> E.raise_TypeError inf.loc "excepted a array"
-  | A.FieldExp (inf1,inf2) ->
-     match check_var venv tenv inf.value with
-     | T.TRecord (fields,_) ->
-      begin
-        try
-          List.assoc inf2.value fields
-        with 
-          Not_found -> E.raise_NameError inf2.loc "cann't find related id"
-      end
-     | _ -> E.raise_TypeError inf1.loc "excepted a Record"
-  | _ -> failwith "unknown type"
+  | "<=" ->
+    begin
+      match v1 with
+      | VInt i1 ->let VInt i2 =v2 in VBool (i1<=i2)
+      | VFloat i1 ->let VFloat i2 =v2 in VBool (i1<=i2)
+      | VString s1 -> let VString s2 = v2 in VBool(s1<=s2)
+    end
+  | ">" ->
+    begin
+      match v1 with
+      | VInt i1 ->let VInt i2 =v2 in VBool (i1>i2)
+      | VFloat i1 ->let VFloat i2 =v2 in VBool (i1>i2)
+      | VString s1 -> let VString s2 = v2 in VBool(s1>s2)
+    end
+  | ">=" ->
+    begin
+      match v1 with
+      | VInt i1 ->let VInt i2 =v2 in VBool (i1>=i2)
+      | VFloat i1 ->let VFloat i2 =v2 in VBool (i1>=i2)
+      | VString s1 -> let VString s2 = v2 in VBool(s1>=s2)
+    end
+  | "&&" ->
+    let VBool b1 = v1 in
+    let VBool b2 = v2 in
+    VBool(b1&&b2)
+  | "||" ->
+    let VBool b1 = v1 in
+    let VBool b2 = v2 in
+    VBool(b1||b2)
+
+let unop op v = 
+  match op with
+  | "not" ->
+  let VBool b in VBool (not b)
+  | "-" ->
+  match v with
+  | VInt i -> VInt (-i)
+  | VFloat f -> VFloat (-.f)
+
+let rec eval ((tenv,inloop) as env) ((raw_exp,trf)as exp) =
+  match raw_exp with
+  (*基本类型*)
+  | A.NilExp _ -> VNil
+  | A.IntExp i -> VInt i
+  | A.StringEXp s -> VString s
+  | A.BoolExp b -> VBool b
+  | A.FloatExp f -> VFloat f
+
+  | A.InfixOpExp (loc0,loc1,loc2) -> 
+  begin 
+    let op = loc0.value in
+    let v1 = eval  env loc1.value in
+    let v2 = eval  env loc2.value in
+    match op with
+    | A.Eq -> if v1 = v2 then VBool true else VBool false
+    | A.Neq -> if v1= v2 then VBool false else VBool true
+    | A.Plus when T.check_Int !trf ->  bin_op "+" v1 v2
+    | A.Plus when T.check_Float !trf -> bin_op "+." v1 v2    
+    | A.Minus when T.check_Int !trf ->  bin_op "-" v1 v2
+    | A.Minus when T.check_Float !trf -> bin_op "-." v1 v2
+    | A.Times when T.check_Int !trf ->  bin_op "*" v1 v2
+    | A.Times when T.check_Float !trf -> bin_op "*." v1 v2
+    | A.Divide when T.check_Int !trf -> bin_op "/" v1 v2
+    | A.Divide when T.check_Float !trf -> bin_op "/." v1 v2
+    | A.Li -> bin_op "<" v1 v2
+    | A.Le -> bin_op "<+" v1 v2
+    | A.Gt -> bin_op ">" v1 v2
+    | A.Ge -> bin_op ">=" v1 v2
+    | A.And -> bin_op "&&" v1 v2
+    | A.Or -> bin_op "||" v1 v2
+  end
+
+  | A.UnaryExp (loc1,loc2) ->
+  begin 
+    let op = loc1.value in
+    let v = eval  env loc2.value in
+    match op with
+    | A.Neg when T.check_Int !trf -> unop "-" v
+    | A.Neg when T.check_Float !trf -> unop "-" v
+    | A.Not -> unop "-" v
+  end
+
+  | A.LValueExp loc ->
+    get_var env loc.value
+
+  | A.SeqExp (explist) ->
+    eval_explist env explist
+
+  | A.Assign (loc1,loc2) ->
+  begin 
+    let id = loc1.value in
+    let var = eval  env loc2.value in
+    match id with
+    | A.IdVar sb -> setref sb var tenv;VNil
+    | A.SubscriptVar (loc1,loc2) ->
+      let A.IdVar myarratname = loc1.value in
+      let myarray = getref  myarratname tenv  in
+      let e = eval  env loc2.value in
+      Array.set myarray e var;VNil
+    | A.FieldExp (loc,sb) ->
+      let A.IdVar myrecordname = loc.value in
+      let myfield = getref myrecordname tenv in
+      let newfield = set_record sb var myfield in
+      setref myrecordname newfield tenv;VNil
+
+  end
+  
+  | A.CallExp (sb,explist) ->
+    let (args,bodyexp) = getref sb tenv in
+    let vallist = List.map (fun x -> eval env x) explist in
+    let newtenv = List.fold_left2 (fun e sb v -> set sb v e) !tenv args vallist in
+    eval (ref newtenv,inloop) bodyexp
+
+  | A.ArrayCreate (sb,loc1,loc2) ->
+    let VInt(size) = eval  env loc1.value in
+    VArray (Array.make size (eval env loc2.value))
+
+  | A.RecordCreate (sb,sbexplsit) ->
+     VRevord (List.map (fun (sb,loc)-> (sb,eval env loc.value)) sbexplsit)
+
+  | A.IfThenElse (loc0,loc1,loc2) ->
+    let VBool b= eval env loc0.value in
+    if b then eval env loc1.value else eval env loc2.value
+
+  | A.IfThen (loc1,loc2) ->
+    let VBool b =eval env loc1.value in
+    if b then eval env loc2.value else VNil
+
+  | A.WhileExp (loc1,loc2) ->
+
+    let rec loop exp1 exp2 = match (eval env exp1),!inloop with
+      | VBool b ,true when b -> eval env exp2
+      |_ -> inloop:= false;VNil
+    in inloop:=true;loop loc1.value loc2.value
+
+  | A.ForExp (sb,_,loc0,loc1,loc2) ->
+    let rec loop exp1 exp2 exp3 = match (eval env exp1),(eval env exp2),!inloop with
+      | VInt i1,VInt i2,true when i1<i2 -> eval env exp3 
+      | _ -> inloop:=false;VNil
+    in inloop:=true;loop loc0.value loc1.value loc2.value
+
+  | A.Break _ ->
+    inloop:=false;VNil
+  
+  | Let (declist,loc) ->
+    let newenv =
+    List.fold_left (fun e dec -> eval_dec e dec) env declist in 
+    eval newenv loc.value
+
+and eval_dec ((tenv,inloop) as env) dec=
+  match dec with 
+  | TyDec _ -> env
+  | VarDec d -> 
+    let sb = d.var_name in
+    let e= d.var_exp.value in
+    let newtenv = set sb (eval env e) !tenv in
+    (ref newtenv,inloop)
+  | FunDec d -> 
+    let sb = d.fun_name in
+    let fieldlist = d.fun_fields|>List.map (fun (x,_,_) -> x) in
+    let body = d.fun_exp.value in
+    let newtenv = set sb (VFunction (fieldlist, body)) !tenv in
+    (ref newtenv,inloop)
+
+and eval_explist env explist =
+  let rec loop e l =
+    match l with
+    | [] -> VNil
+    | [x] -> eval env x
+    | hd::tl -> eval env hd;loop e l
+
+and get_var ((tenv,inloop) as env) var =
+  match var with
+  | A.IdVar sb -> getref sb tenv
+  | A.SubscriptVar(loc1,loc2) ->
+    let VArray myarray = get_var env loc1.value in
+    let e = eval env loc2.value in
+    Array.get myarray e
+  | A.FieldExp (loc,sb) ->
+    let VRevord myfield = get_var env loc.value in
+    List.assoc sb myfield
+  

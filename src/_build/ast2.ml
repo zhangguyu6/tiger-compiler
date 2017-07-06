@@ -2,7 +2,7 @@
 
 open Batteries
 open BatPrintf
-module L= Location
+open Location
 module S = Symtab
 module T = Types
 
@@ -18,9 +18,9 @@ type ty =
   (*tyid arrty recty 三种类型*)
   | Tyid of S.symbol
   (*record类型引用的变量要进行逃逸分析*)
-  | RecTy of field L.loc list
+  | RecTy of field list
   (*array[tyid]*)
-  | ArrTy of S.symbol L.loc
+  | ArrTy of S.symbol
 
 and field =
   (*record和fundec的参数变量 id:tyid *)
@@ -40,53 +40,53 @@ and raw_exp =
 
   (*复合类型需要记录位置信息*)
   (*变量 id subsript fieldExp*)
-  | LValueExp of var L.loc 
+  | LValueExp of var loc 
   (*表达式序列*)
-  | SeqExp of exp L.loc list
+  | SeqExp of exp list
   (*中缀操作符*)
-  | InfixOpExp of infixop L.loc * 
+  | InfixOpExp of infixop loc * 
                   (*左表达式*)
-                  exp L.loc *  
+                  exp loc *  
                   (*右表达式*)   
-                  exp L.loc      
+                  exp loc      
   (*前缀操作符*)
-  | UnaryExp of unaryop L.loc *
+  | UnaryExp of unaryop loc *
                 (*表达式*)
-                exp L.loc      
+                exp loc      
   (*函数调用*)
   | CallExp of S.symbol * (*函数名*)
-               exp L.loc list (*参数列表*)
+               exp list (*参数列表*)
   (*列表*)
   | ArrayCreate of S.symbol * (*类型*)
-                   exp L.loc * (*数组大小*)
-                   exp L.loc   (*数组初始化*)
+                   exp loc * (*数组大小*)
+                   exp loc   (*数组初始化*)
   (*record*)
   | RecordCreate of S.symbol *(*类型*)
-                    (S.symbol * exp L.loc) list (*fields*)
+                    (S.symbol * exp loc) list (*fields*)
   (*赋值 id:=exp*)
-  | Assign of var L.loc * (*变量名*)
-              exp L.loc   (*变量值*)
+  | Assign of var loc * (*变量名*)
+              exp loc   (*变量值*)
   
-  | IfThenElse of exp L.loc * (*if*)
-                  exp L.loc * (*then*)
-                  exp L.loc   (*else*)
+  | IfThenElse of exp loc * (*if*)
+                  exp loc * (*then*)
+                  exp loc   (*else*)
 
-  | IfThen of exp L.loc * (*if*)
-              exp L.loc  (*then*)
+  | IfThen of exp loc * (*if*)
+              exp loc  (*then*)
 
-  | WhileExp of exp L.loc * (*while*)
-                exp L.loc   (*do*)
+  | WhileExp of exp loc * (*while*)
+                exp loc   (*do*)
 
   | ForExp of S.symbol *        (*循环变量*)
               bool ref *   (*逃逸参数，判断是否放入栈帧*)
-              exp L.loc * (*初始值*)
-              exp L.loc * (*终结值*)
-              exp L.loc   (*do*)
+              exp loc * (*初始值*)
+              exp loc * (*终结值*)
+              exp loc   (*do*)
 
-  | Break of unit L.loc
+  | Break of unit loc
   (*let var in exp*)
   | Let of dec list * (*声明的变量*)
-           exp L.loc 
+           exp loc 
 
 and dec = 
   | TyDec of tydec
@@ -96,8 +96,8 @@ and dec =
 and var = 
   (*id var[exp] var.id *)
   | IdVar of S.symbol
-  | SubscriptVar of var L.loc * exp L.loc
-  | FieldExp of var L.loc * S.symbol
+  | SubscriptVar of var loc * exp loc
+  | FieldExp of var loc * S.symbol
 
 and tydec = 
 (*type tyid = ty*)
@@ -111,7 +111,7 @@ and vardec =
 {
   var_name: S.symbol;
   var_type: S.symbol;
-  var_exp : exp L.loc;
+  var_exp : exp loc;
   var_escape:bool ref  (*逃逸参数，判断是否放入栈帧*)
 }
 
@@ -120,8 +120,8 @@ and fundec =
 {
   fun_name: S.symbol;
   fun_type: S.symbol;
-  fun_fields: field L.loc list;
-  fun_exp : exp L.loc
+  fun_fields: field list;
+  fun_exp : exp loc
 }
 
 let rec string_of_exp ((e,refty):exp):string  = match e with
@@ -200,7 +200,6 @@ let rec string_of_exp ((e,refty):exp):string  = match e with
   | Let (declist,exp) -> 
     sprintf "let %s in %s end" (string_of_declist declist) (string_of_exp exp.value)
 
-  | _  -> failwith "Wrong Syntax" 
 
 and string_of_var (v:var):string =match v with
     | IdVar sb -> S.to_string sb
@@ -225,6 +224,7 @@ and string_of_binop = function
     | Ge ->">="
     | And -> "&"
     | Or -> "|"
+    | Neq -> "<>"
 
 and string_of_unop = function
     | Neg ->"-"
@@ -233,12 +233,12 @@ and string_of_unop = function
 and string_of_ty = function
     | Tyid sb -> "tyId:"^ (S.to_string sb)
     | RecTy fieldlist -> "Record:"^(string_of_fieldlist fieldlist)
-    | ArrTy loc -> "Array:"^(S.to_string loc.value)
+    | ArrTy loc -> "Array:"^(S.to_string loc)
 
-and string_of_fieldlist (fieldlist:field L.loc list):string=
+and string_of_fieldlist (fieldlist:field list):string=
     fieldlist |>
     List.map (fun x -> 
-    let sb1,_,sb2 = x|> L.extract_value in (S.to_string sb1) ^ ":" ^ (S.to_string sb2)) |> 
+    let sb1,_,sb2 = x in (S.to_string sb1) ^ ":" ^ (S.to_string sb2)) |> 
     List.fold_left (fun acc x -> acc ^ x) ""
     
 
@@ -246,13 +246,13 @@ and string_of_fcreatelist fcreatelist =
     fcreatelist |>
     List.map (fun (sb,fieldexp) ->  
     let id = S.to_string sb in
-    let exp =fieldexp |> L.extract_value|> string_of_exp  in
+    let exp =fieldexp.value|> string_of_exp  in
     sprintf "%s:%s" id exp) |>
     List.fold_left (fun acc x -> acc^";"^ x) ""
 
 and string_of_explist explist= 
     explist |>
-    List.fold_left (fun acc x -> acc^";"^(x |> L.extract_value|> string_of_exp)) ""
+    List.fold_left (fun acc x -> acc^";"^(x |>  string_of_exp)) ""
 
 and string_of_dec = function
   | TyDec  dec -> string_of_tydec dec
@@ -274,7 +274,7 @@ and string_of_fundec { fun_name;fun_type;fun_fields;fun_exp} =
     let id = fun_name |> S.to_string in
     let ty = fun_type |> S.to_string in
     let fieldlist = fun_fields |> string_of_fieldlist in
-    let funexp = fun_exp |>  L.extract_value |> string_of_exp in
+    let funexp = fun_exp.value |> string_of_exp in
     sprintf "function %s (%s):(%s) (%s)" id ty fieldlist funexp
 
 and string_of_declist declist= 

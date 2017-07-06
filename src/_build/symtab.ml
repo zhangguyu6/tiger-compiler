@@ -14,3 +14,7 @@ let get k m =
 let set k v m = BatMap.add k v m
 
 let to_string (idname,_)= idname
+
+let from_string (idname:string) = 
+  let i=ref (-1) in
+  (fun _ -> incr i;(idname,!i)) ()

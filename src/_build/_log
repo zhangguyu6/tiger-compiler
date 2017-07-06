@@ -1,72 +1,10 @@
 ### Starting build.
-# Target: typecheck.ml.depends, tags: { package(batteries), extension:ml, file:typecheck.ml, ocaml, ocamldep, quiet, traverse }
-ocamlfind ocamldep -package batteries -modules typecheck.ml > typecheck.ml.depends
-# Target: ast2.ml.depends, tags: { package(batteries), extension:ml, file:ast2.ml, ocaml, ocamldep, quiet, traverse }
-ocamlfind ocamldep -package batteries -modules ast2.ml > ast2.ml.depends # cached
-# Target: location.ml.depends, tags: { package(batteries), extension:ml, file:location.ml, ocaml, ocamldep, quiet, traverse }
-ocamlfind ocamldep -package batteries -modules location.ml > location.ml.depends # cached
-# Target: location.cmo, tags: { package(batteries), byte, compile, extension:cmo, extension:ml, file:location.cmo, file:location.ml, implem, ocaml, quiet, traverse }
-ocamlfind ocamlc -c -package batteries -o location.cmo location.ml # cached
-# Target: symtab.ml.depends, tags: { package(batteries), extension:ml, file:symtab.ml, ocaml, ocamldep, quiet, traverse }
-ocamlfind ocamldep -package batteries -modules symtab.ml > symtab.ml.depends # cached
-# Target: symtab.cmo, tags: { package(batteries), byte, compile, extension:cmo, extension:ml, file:symtab.cmo, file:symtab.ml, implem, ocaml, quiet, traverse }
-ocamlfind ocamlc -c -package batteries -o symtab.cmo symtab.ml # cached
-# Target: types.ml.depends, tags: { package(batteries), extension:ml, file:types.ml, ocaml, ocamldep, quiet, traverse }
-ocamlfind ocamldep -package batteries -modules types.ml > types.ml.depends # cached
-# Target: types.cmo, tags: { package(batteries), byte, compile, extension:cmo, extension:ml, file:types.cmo, file:types.ml, implem, ocaml, quiet, traverse }
-ocamlfind ocamlc -c -package batteries -o types.cmo types.ml # cached
-# Target: ast2.cmo, tags: { package(batteries), byte, compile, extension:cmo, extension:ml, file:ast2.cmo, file:ast2.ml, implem, ocaml, quiet, traverse }
-ocamlfind ocamlc -c -package batteries -o ast2.cmo ast2.ml # cached
-# Target: env.ml.depends, tags: { package(batteries), extension:ml, file:env.ml, ocaml, ocamldep, quiet, traverse }
-ocamlfind ocamldep -package batteries -modules env.ml > env.ml.depends # cached
-# Target: env.cmo, tags: { package(batteries), byte, compile, extension:cmo, extension:ml, file:env.cmo, file:env.ml, implem, ocaml, quiet, traverse }
-ocamlfind ocamlc -c -package batteries -o env.cmo env.ml # cached
-# Target: errors.ml.depends, tags: { package(batteries), extension:ml, file:errors.ml, ocaml, ocamldep, quiet, traverse }
-ocamlfind ocamldep -package batteries -modules errors.ml > errors.ml.depends # cached
-# Target: errors.cmo, tags: { package(batteries), byte, compile, extension:cmo, extension:ml, file:errors.cmo, file:errors.ml, implem, ocaml, quiet, traverse }
-ocamlfind ocamlc -c -package batteries -o errors.cmo errors.ml # cached
-# Target: typecheck.cmo, tags: { package(batteries), byte, compile, extension:cmo, extension:ml, file:typecheck.cmo, file:typecheck.ml, implem, ocaml, quiet, traverse }
-ocamlfind ocamlc -c -package batteries -o typecheck.cmo typecheck.ml
-+ ocamlfind ocamlc -c -package batteries -o typecheck.cmo typecheck.ml
-File "typecheck.ml", line 226, characters 12-33:
-Warning 40: this record of type A.tydec contains fields that are 
-not visible in the current scope: type_name type_type.
-They will not be selected if the type becomes unknown.
-File "typecheck.ml", line 231, characters 13-94:
-Warning 40: this record of type A.vardec contains fields that are 
-not visible in the current scope: var_name var_type var_exp var_escape.
-They will not be selected if the type becomes unknown.
-File "typecheck.ml", line 245, characters 13-96:
-Warning 40: this record of type A.fundec contains fields that are 
-not visible in the current scope: fun_name fun_type fun_fields fun_exp.
-They will not be selected if the type becomes unknown.
-# Target: location.cmx, tags: { package(batteries), compile, extension:cmx, extension:ml, file:location.cmx, file:location.ml, implem, native, ocaml, quiet, traverse }
-ocamlfind ocamlopt -c -package batteries -o location.cmx location.ml # cached
-# Target: symtab.cmx, tags: { package(batteries), compile, extension:cmx, extension:ml, file:symtab.cmx, file:symtab.ml, implem, native, ocaml, quiet, traverse }
-ocamlfind ocamlopt -c -package batteries -o symtab.cmx symtab.ml # cached
-# Target: types.cmx, tags: { package(batteries), compile, extension:cmx, extension:ml, file:types.cmx, file:types.ml, implem, native, ocaml, quiet, traverse }
-ocamlfind ocamlopt -c -package batteries -o types.cmx types.ml # cached
-# Target: ast2.cmx, tags: { package(batteries), compile, extension:cmx, extension:ml, file:ast2.cmx, file:ast2.ml, implem, native, ocaml, quiet, traverse }
-ocamlfind ocamlopt -c -package batteries -o ast2.cmx ast2.ml # cached
-# Target: env.cmx, tags: { package(batteries), compile, extension:cmx, extension:ml, file:env.cmx, file:env.ml, implem, native, ocaml, quiet, traverse }
-ocamlfind ocamlopt -c -package batteries -o env.cmx env.ml # cached
-# Target: errors.cmx, tags: { package(batteries), compile, extension:cmx, extension:ml, file:errors.cmx, file:errors.ml, implem, native, ocaml, quiet, traverse }
-ocamlfind ocamlopt -c -package batteries -o errors.cmx errors.ml # cached
-# Target: typecheck.cmx, tags: { package(batteries), compile, extension:cmx, extension:ml, file:typecheck.cmx, file:typecheck.ml, implem, native, ocaml, quiet, traverse }
-ocamlfind ocamlopt -c -package batteries -o typecheck.cmx typecheck.ml
-+ ocamlfind ocamlopt -c -package batteries -o typecheck.cmx typecheck.ml
-File "typecheck.ml", line 226, characters 12-33:
-Warning 40: this record of type A.tydec contains fields that are 
-not visible in the current scope: type_name type_type.
-They will not be selected if the type becomes unknown.
-File "typecheck.ml", line 231, characters 13-94:
-Warning 40: this record of type A.vardec contains fields that are 
-not visible in the current scope: var_name var_type var_exp var_escape.
-They will not be selected if the type becomes unknown.
-File "typecheck.ml", line 245, characters 13-96:
-Warning 40: this record of type A.fundec contains fields that are 
-not visible in the current scope: fun_name fun_type fun_fields fun_exp.
-They will not be selected if the type becomes unknown.
-# Target: typecheck.native, tags: { package(batteries), dont_link_with, extension:native, file:typecheck.native, link, native, ocaml, program, quiet, traverse }
-ocamlfind ocamlopt -linkpkg -package batteries location.cmx symtab.cmx types.cmx ast2.cmx env.cmx errors.cmx typecheck.cmx -o typecheck.native
+# Target: try.ml.depends, tags: { package(batteries), extension:ml, file:try.ml, ocaml, ocamldep, quiet, traverse }
+/home/zgy/.opam/4.04.1/bin/ocamldep.opt -modules try.ml > try.ml.depends
+# Target: try.cmo, tags: { package(batteries), byte, compile, extension:cmo, extension:ml, file:try.cmo, file:try.ml, implem, ocaml, quiet, traverse }
+/home/zgy/.opam/4.04.1/bin/ocamlc.opt -c -o try.cmo try.ml
+# Target: try.cmx, tags: { package(batteries), compile, extension:cmx, extension:ml, file:try.cmx, file:try.ml, implem, native, ocaml, quiet, traverse }
+/home/zgy/.opam/4.04.1/bin/ocamlopt.opt -c -o try.cmx try.ml
+# Target: try.native, tags: { package(batteries), dont_link_with, extension:native, file:try.native, link, native, ocaml, program, quiet, traverse }
+/home/zgy/.opam/4.04.1/bin/ocamlopt.opt try.cmx -o try.native
 # Compilation successful.
