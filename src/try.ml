@@ -1,14 +1,17 @@
-let a = [1;2;3];;
-let b i j k = i+j+k
-let c =b 1
-let d =c 2
-let e = d 3;;
+type a = {
+  mutable b:int;
+  c :int
+}
 
-let da =ref 1
-let da2 = (1,da)
-let change (_,d) = 
-  d:=2;;
+let incr a =
+  a.b <- 1+a.b
 
-print_int (!da);;
-change da2;;
-print_int (!da);;
+let b = {
+  b=1;
+  c=2
+} ;;
+
+let print_and_incr b =
+  incr b ; print_int b.b;;
+print_int (incr b;b.b);;
+print_and_incr b

@@ -33,7 +33,7 @@ and raw_exp =
 
   (*基本类型*)
   | NilExp of unit
-  | IntEXp of int
+  | IntExp of int
   | StringEXp of string
   | BoolExp of bool 
   | FloatExp of float
@@ -127,7 +127,7 @@ and fundec =
 let rec string_of_exp ((e,refty):exp):string  = match e with
   (*基本表达式*)
   | NilExp _-> "nil" 
-  | IntEXp i -> string_of_int i
+  | IntExp i -> string_of_int i
   | StringEXp s-> s
   | BoolExp b -> string_of_bool b
   | FloatExp f -> string_of_float f

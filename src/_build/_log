@@ -1,10 +1,40 @@
 ### Starting build.
-# Target: try.ml.depends, tags: { package(batteries), extension:ml, file:try.ml, ocaml, ocamldep, quiet, traverse }
-/home/zgy/.opam/4.04.1/bin/ocamldep.opt -modules try.ml > try.ml.depends
-# Target: try.cmo, tags: { package(batteries), byte, compile, extension:cmo, extension:ml, file:try.cmo, file:try.ml, implem, ocaml, quiet, traverse }
-/home/zgy/.opam/4.04.1/bin/ocamlc.opt -c -o try.cmo try.ml
-# Target: try.cmx, tags: { package(batteries), compile, extension:cmx, extension:ml, file:try.cmx, file:try.ml, implem, native, ocaml, quiet, traverse }
-/home/zgy/.opam/4.04.1/bin/ocamlopt.opt -c -o try.cmx try.ml
-# Target: try.native, tags: { package(batteries), dont_link_with, extension:native, file:try.native, link, native, ocaml, program, quiet, traverse }
-/home/zgy/.opam/4.04.1/bin/ocamlopt.opt try.cmx -o try.native
+# Target: env.ml.depends, tags: { package(batteries), extension:ml, file:env.ml, ocaml, ocamldep, quiet, traverse }
+ocamlfind ocamldep -package batteries -modules env.ml > env.ml.depends
+# Target: ast.ml.depends, tags: { package(batteries), extension:ml, file:ast.ml, ocaml, ocamldep, quiet, traverse }
+ocamlfind ocamldep -package batteries -modules ast.ml > ast.ml.depends # cached
+# Target: location.ml.depends, tags: { package(batteries), extension:ml, file:location.ml, ocaml, ocamldep, quiet, traverse }
+ocamlfind ocamldep -package batteries -modules location.ml > location.ml.depends # cached
+# Target: location.cmo, tags: { package(batteries), byte, compile, extension:cmo, extension:ml, file:location.cmo, file:location.ml, implem, ocaml, quiet, traverse }
+ocamlfind ocamlc -c -package batteries -o location.cmo location.ml # cached
+# Target: symtab.ml.depends, tags: { package(batteries), extension:ml, file:symtab.ml, ocaml, ocamldep, quiet, traverse }
+ocamlfind ocamldep -package batteries -modules symtab.ml > symtab.ml.depends # cached
+# Target: symtab.cmo, tags: { package(batteries), byte, compile, extension:cmo, extension:ml, file:symtab.cmo, file:symtab.ml, implem, ocaml, quiet, traverse }
+ocamlfind ocamlc -c -package batteries -o symtab.cmo symtab.ml # cached
+# Target: types.ml.depends, tags: { package(batteries), extension:ml, file:types.ml, ocaml, ocamldep, quiet, traverse }
+ocamlfind ocamldep -package batteries -modules types.ml > types.ml.depends # cached
+# Target: types.cmo, tags: { package(batteries), byte, compile, extension:cmo, extension:ml, file:types.cmo, file:types.ml, implem, ocaml, quiet, traverse }
+ocamlfind ocamlc -c -package batteries -o types.cmo types.ml # cached
+# Target: ast.cmo, tags: { package(batteries), byte, compile, extension:cmo, extension:ml, file:ast.cmo, file:ast.ml, implem, ocaml, quiet, traverse }
+ocamlfind ocamlc -c -package batteries -o ast.cmo ast.ml # cached
+# Target: env.cmo, tags: { package(batteries), byte, compile, extension:cmo, extension:ml, file:env.cmo, file:env.ml, implem, ocaml, quiet, traverse }
+ocamlfind ocamlc -c -package batteries -o env.cmo env.ml
++ ocamlfind ocamlc -c -package batteries -o env.cmo env.ml
+File "env.ml", line 47, characters 47-61:
+Warning 16: this optional argument cannot be erased.
+# Target: location.cmx, tags: { package(batteries), compile, extension:cmx, extension:ml, file:location.cmx, file:location.ml, implem, native, ocaml, quiet, traverse }
+ocamlfind ocamlopt -c -package batteries -o location.cmx location.ml # cached
+# Target: symtab.cmx, tags: { package(batteries), compile, extension:cmx, extension:ml, file:symtab.cmx, file:symtab.ml, implem, native, ocaml, quiet, traverse }
+ocamlfind ocamlopt -c -package batteries -o symtab.cmx symtab.ml # cached
+# Target: types.cmx, tags: { package(batteries), compile, extension:cmx, extension:ml, file:types.cmx, file:types.ml, implem, native, ocaml, quiet, traverse }
+ocamlfind ocamlopt -c -package batteries -o types.cmx types.ml # cached
+# Target: ast.cmx, tags: { package(batteries), compile, extension:cmx, extension:ml, file:ast.cmx, file:ast.ml, implem, native, ocaml, quiet, traverse }
+ocamlfind ocamlopt -c -package batteries -o ast.cmx ast.ml # cached
+# Target: env.cmx, tags: { package(batteries), compile, extension:cmx, extension:ml, file:env.cmx, file:env.ml, implem, native, ocaml, quiet, traverse }
+ocamlfind ocamlopt -c -package batteries -o env.cmx env.ml
++ ocamlfind ocamlopt -c -package batteries -o env.cmx env.ml
+File "env.ml", line 47, characters 47-61:
+Warning 16: this optional argument cannot be erased.
+# Target: env.native, tags: { package(batteries), dont_link_with, extension:native, file:env.native, link, native, ocaml, program, quiet, traverse }
+ocamlfind ocamlopt -linkpkg -package batteries location.cmx symtab.cmx types.cmx ast.cmx env.cmx -o env.native
 # Compilation successful.

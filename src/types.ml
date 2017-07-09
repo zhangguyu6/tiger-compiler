@@ -31,6 +31,8 @@ type ty =
   (*Function (ty +):ty*)
   | Function of ty list * ty
 
+
+
 (*递归地检查类型是否相符*)
 let rec check_ty (x:ty) (y:ty) :bool =
   match x,y with
@@ -47,8 +49,6 @@ let rec check_ty (x:ty) (y:ty) :bool =
     | Some ty -> check_ty ty other
     | None -> false
   end
-  | Function (args1,results1),Function (args2,results2) ->
-    false
   | _-> false
 
 (*检查两个类型列表是否相符,只有在长度相等且每个元素的都相符时才相符*)
@@ -67,12 +67,17 @@ let rec string_of_ty (ty:ty) :string= match ty with
   | Record (fields,_) -> sprintf "Record {%s} " (string_of_fields fields)
   | Array (ty,_) -> sprintf "Array [%s]" (string_of_ty ty)
   | Name (id,rty) ->
-  begin
-      match !rty with
-    | Some ty -> sprintf "Name <%s>:%s" (to_string id) (string_of_ty ty)
-    | None -> "Name"
-  end
-  | Function (tylist,ty) -> sprintf "Function (%s):%s" (string_of_tylist tylist) (string_of_ty ty)
+    begin
+        match !rty with
+      | Some ty -> sprintf "Name <%s>:%s" (to_string id) (string_of_ty ty)
+      | None -> "Name"
+    end
+  | Function (tylist,ty) -> sprintf "Function <%s>:%s" 
+    (string_of_tylist tylist)
+    (string_of_ty ty)
+
+
+  
 
 and string_of_fields (fieldlist:(symbol * ty) list):string=
   List.fold_left 

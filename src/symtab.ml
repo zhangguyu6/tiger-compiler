@@ -1,8 +1,14 @@
 (*符号表*)
 open Batteries
-(*key为string的map类型*)
+
+
+(*name+scope 0 为全局 *)
 type symbol = string * int
+
+
 type 'a t = (symbol,'a) BatMap.t
+
+
 
 let create _ = BatMap.empty
 
@@ -22,6 +28,4 @@ let setref k v m =
 
 let to_string (idname,_)= idname
 
-let from_string (idname:string) = 
-  let i=ref (-1) in
-  (fun _ -> incr i;(idname,!i)) ()
+let from_string (idname:string) ?(scopeindex=0) = (idname,scopeindex)

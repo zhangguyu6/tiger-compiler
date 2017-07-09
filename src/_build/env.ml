@@ -1,59 +1,75 @@
 open Types
 open Symtab
-(*type ty = 
-  | TInt
-  | TFloat
-  | TBool
-  | TString
-  | TRecord of (S.t * ty) list * U.t
-  | TArray of ty * U.t
-  | TNil
-  | TName of S.t * ty option ref
+module A = Ast
 
-let rec check_ty x y =
-  match (x,y) with
-  | (TInt,TInt) -> true
-  | (TFloat,TFloat) -> true
-  | (TBool,TBool) -> true
-  | (TString,TString) -> true
-  | (TNil,TNil) -> true
-  | (TArray (ty1,_),TArray (ty2,_)) -> check_ty ty1 ty2
-  | (TRecord (styl1,_) ,TRecord (styl2,_)) ->
-    begin
-      let tyl1 = List.map (fun (_,x) -> x) styl1 in 
-      let tyl2 = List.map (fun (_,x) -> x) styl2 in 
-      check_tylist tyl1 tyl2
-    end
-  | (TName(_,rty),other) | (other,TName(rty,_)) ->
-    match !rty with
-    | Some ty -> check_ty ty other
-    | None -> false
-  | _ -> false
-
-let check_tylist tyl1 tyl2 =
-  List.iter2 
-  (fun x y -> if not (check_ty x y) then failwith "typelist dismatched")
-  tyl1 tyl2 ; true*)
+type valty = 
+  | VInt of int
+  | VFloat of float
+  | VBool of bool
+  | VString of string
+  | VNil of unit
+  (*用Association list来表示记录*)
+  | VRecord of (symbol * valty) list
+  (*用array来表示数组*)
+  | VArray of valty array
+  (*用args+return+body表示函数*)
+  | VFunction of symbol list  * A.exp
 
 
+(*值环境 *)
+type venv = ty t
 
-
-type entry =
-  (*值类型*)
-  | VarEntry of ty
-  (*函数类型 (参数类型):返回类型*)
-  | FunEntry of ty list * ty
-
-(*值环境 分为函数和变量*)
-type venv = entry t
-(*类型环境 只记录和返回类型*)
+(*类型环境 *)
 type tenv = ty t
+(*环境包含了求值一个表达式的全部要素*)
+type env = 
+  {mutable v:venv;
+   mutable t:tenv;
+   inloop:bool;
+   }
 
-let create_env _ = create ()
+type valenv = valty t ref
 
-let add_venv (k:symbol) (v:entry) (env:venv) =
-  set k v env
+let get_by_sb (s:symbol) (e:valenv) : valty=
+  match get s !e with
+  | Some t -> t
+  | None -> failwith "can't find related sb"
 
-let add_tenv (k:symbol) (v:ty) (env:tenv) =
-  set k v env
+(*可变绑定--修改*)
+let bind_sb (s:symbol) (e:valenv) (v:valty) =
+  e:= set s v !e 
+(*不可变绑定--新建*)
+let create_sb (s:symbol) (e:valenv) (v:valty) : valenv =
+  let env=set s v !e in
+  ref env 
 
+
+let create_env ?(v=create ()) ?(t=create ()) ?(inloop = false) : env = {
+  v=v;
+  t=t;
+  inloop=inloop;
+}
+
+(*在旧环境的基础上扩展新环境*)
+let add_venv (k:symbol) (v:ty) (env:env) =
+  {env with v = set k v env.v}
+
+(*修改旧环环境*)
+let update_venv (k:symbol) (v:ty) (env:env) =
+  env.v <- set k v env.v
+
+let lookup_venv (k:symbol) (env:env) =
+  match (get k env.v) with
+  | Some v -> v
+  | None -> failwith "can't find var in venv"
+
+let add_tenv (k:symbol) (t:ty) (env:env) =
+  {env with t = set k t env.t}
+
+let update_tenv (k:symbol) (t:ty) (env:env) =
+  env.t <- set k t env.t
+
+let lookup_tenv (k:symbol) (env:env) =
+  match (get k env.t) with
+  | Some t -> t
+  | None -> failwith "can't find ty in tenv"

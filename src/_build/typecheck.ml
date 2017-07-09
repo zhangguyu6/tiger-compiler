@@ -3,7 +3,6 @@ open BatPrintf
 open Env
 open Location
 module A = Ast2
-
 module S = Symtab
 module E = Errors
 module T = Types
@@ -44,7 +43,7 @@ let rec check_exp ((tenv,venv,in_loop) as env) (raw_exp,trf) =
   match raw_exp with 
   (*基本类型*)
   | A.NilExp _ -> set_type trf T.Nil
-  | A.IntEXp _ -> set_type trf T.Int
+  | A.IntExp _ -> set_type trf T.Int
   | A.StringEXp _ -> set_type trf T.String
   | A.BoolExp _ -> set_type trf T.Bool
   | A.FloatExp _ -> set_type trf T.Float
@@ -95,7 +94,7 @@ let rec check_exp ((tenv,venv,in_loop) as env) (raw_exp,trf) =
     begin
       let args = 
         loc |>
-        List.map (fun e -> check_exp env (e.value)) in
+        List.map (fun e -> check_exp env e) in
         match S.get sb tenv with 
         | Some (T.Function (tylist,ty)) -> 
           if T.check_tylist args tylist then set_type trf ty
@@ -207,8 +206,8 @@ and check_var var loc ((tenv,venv,in_loop) as env)= match var with
 
 and check_exp_loc_list env = function
   | [] -> T.Nil
-  | [exp_loc] -> check_exp env (exp_loc.value)
-  | hd::tl -> ignore (check_exp env hd.value); check_exp_loc_list env tl
+  | [exp_loc] -> check_exp env (exp_loc)
+  | hd::tl -> ignore (check_exp env hd); check_exp_loc_list env tl
 
 and check_record sb_tylist sb_loclist env =
     let actualtylsit = sb_loclist |>
@@ -261,13 +260,13 @@ and tranFromAtytoTty tenv aty  = match aty with
   | A.Tyid sb -> tylookorfail tenv sb 
   | A.RecTy fieldlist -> tranFromfieldlist tenv fieldlist 
   | A.ArrTy (loc) -> 
-    let ty = tylookorfail tenv loc.value in
+    let ty = tylookorfail tenv loc in
     T.Array (ty,T.incridex ())
 
 and tranFromfieldlist tenv fieldlist = 
   let sb_tylist =
   List.map (fun x ->
-    let field = x.value in
+    let field = x in
     let (id,_,tyid) = field in
     let ty = tylookorfail tenv tyid  in
     (id,ty)) fieldlist  in
@@ -276,5 +275,5 @@ and tranFromfieldlist tenv fieldlist =
 and tranFieldlsit_to_tylist fieldlist tenv=
   fieldlist |>
   List.map (fun x ->
-    let field = x .value in
+    let field = x  in
     let (_,_,tyid) = field in tylookorfail  tenv tyid)
