@@ -4,5 +4,5 @@
 - [x] 使用Menhir完成parser
 - [x] 构建抽象语法树AST
 - [x] 解释运行
-- [] 使用llvm生成machine code
+- [ ] 使用llvm生成machine code
 
